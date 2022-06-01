@@ -1,3 +1,5 @@
-opencv
+#opencv
 pyopengl
-pyqt==4
+#pyqt==4
+plyfile
+numpy

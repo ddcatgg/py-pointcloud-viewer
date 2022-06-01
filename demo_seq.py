@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #===============================================================================
-# 
+#
 # Point cloud sequence viewer with pyqt
 #
 # Written by Soonmin Hwang (jjang9hsm@gmail.com)
@@ -22,14 +22,18 @@ import numpy as np
 
 #===============================================================================
 
+PY3 = sys.version_info.major == 3
+if PY3:
+    xrange = range
+
 class SeqGLWidget(PyGLWidget):
 
     def __init__(self, disp_list, velo_list):
 
         assert( len(disp_list) == len(velo_list) )
 
-        self.nFrames = len(disp_list)       
-        
+        self.nFrames = len(disp_list)
+
         self.disp_list = disp_list
         self.velo_list = velo_list
 
@@ -68,15 +72,15 @@ class SeqGLWidget(PyGLWidget):
                 self.bShowDisp = not self.bShowDisp
             elif _event.key() == QtCore.Qt.Key_C:
                 import pdb
-                pdb.set_trace()                
-            elif _event.key() == QtCore.Qt.Key_M:                
-                for ii in xrange(self.nFrames):                                        
-                    # if ii != 0 and ii % 10 == 0: 
+                pdb.set_trace()
+            elif _event.key() == QtCore.Qt.Key_M:
+                for ii in xrange(self.nFrames):
+                    # if ii != 0 and ii % 10 == 0:
                     self._cur = min(self.nFrames-1, self._cur+1)
 
-                    self.translate([self.delta_t, 0.0, 0.0])                        
-                    self.rotate([0.0, 1.0, 1.0], self.delta_angle)                                    
-                    self.updateGL()                    
+                    self.translate([self.delta_t, 0.0, 0.0])
+                    self.rotate([0.0, 1.0, 1.0], self.delta_angle)
+                    self.updateGL()
                     time.sleep(self.delay)
 
 
@@ -88,11 +92,11 @@ class SeqGLWidget(PyGLWidget):
 
     def paintGL(self):
         PyGLWidget.paintGL(self)
-        
+
         glPushMatrix()
-        # glRotatef(-10.0, 0.0, 0.0, 1.0)        
-        # glTranslated(0.0, 0.0, -10.0)                        
-            
+        # glRotatef(-10.0, 0.0, 0.0, 1.0)
+        # glTranslated(0.0, 0.0, -10.0)
+
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_COLOR_ARRAY)
 
@@ -103,25 +107,25 @@ class SeqGLWidget(PyGLWidget):
         vtx_disp = self.vbo_disp[self._cur]
         clr_disp = self.vbo_disp_clr[self._cur]
         cnt_disp = self.disp_count[self._cur]
-        
+
         vtx_velo.bind()
         glVertexPointer(3, GL_FLOAT, 0, vtx_velo)
         vtx_velo.unbind()
-        
+
         clr_velo.bind()
         glColorPointer(3, GL_FLOAT, 0, clr_velo)
         clr_velo.unbind()
 
         glDrawArrays(GL_POINTS, 0, cnt_velo)
-       
+
         vtx_disp.bind()
         glVertexPointer(3, GL_FLOAT, 0, vtx_disp)
         vtx_disp.unbind()
-                
+
         clr_disp.bind()
         glColorPointer(3, GL_FLOAT, 0, clr_disp)
         clr_disp.unbind()
-        
+
         glDrawArrays(GL_POINTS, 0, cnt_disp)
 
         glDisableClientState(GL_VERTEX_ARRAY)
@@ -137,23 +141,23 @@ class SeqGLWidget(PyGLWidget):
 
         glEnable(GL_DEPTH_TEST)
         self.reset_view()
-        
+
         self.vbo_disp, self.vbo_disp_clr, self.disp_count = self.load_vbo_list(self.disp_list)
         self.vbo_velo, self.vbo_velo_clr, self.velo_count = self.load_vbo_list(self.velo_list)
-        
-    def load_vbo_list(self, ply_list):        
+
+    def load_vbo_list(self, ply_list):
         vtx_list = [ [] for _ in xrange(self.nFrames) ]
-        clr_list = [ [] for _ in xrange(self.nFrames) ]        
-        vtx_count = np.zeros( self.nFrames, dtype=np.int32 )     
+        clr_list = [ [] for _ in xrange(self.nFrames) ]
+        vtx_count = np.zeros( self.nFrames, dtype=np.int32 )
 
         for ii, ply in enumerate(ply_list):
-            pts = np.vstack( [ np.array(list(p)) for p in ply['vertex'] ] ).copy()            
+            pts = np.vstack( [ np.array(list(p)) for p in ply['vertex'] ] ).copy()
             vtx_list[ii] = glvbo.VBO( pts[:,:3].copy().astype(np.float32) )
             clr_list[ii] = glvbo.VBO( pts[:,3:].copy().astype(np.float32) / 255.0 )
             vtx_count[ii] = len(pts)
 
         return vtx_list, clr_list, vtx_count
-    
+
 #===============================================================================
 # Main
 #===============================================================================
@@ -168,38 +172,38 @@ if __name__ == '__main__':
     nFrames = 16
 
     tStart = time.time()
-    print 'Load ply files with multiprocessor...',    
+    print('Load ply files with multiprocessor...', end='')
     p = Pool(8)
     disp_list = p.map( readPly, [ 'data/0018/%06d_depth.ply' % n for n in xrange(nFrames) ] )
     velo_list = p.map( readPly, [ 'data/0018/%06d_velo.ply' % n for n in xrange(nFrames) ] )
-    print 'done. (%.2f sec)' % (time.time() - tStart)
-    
+    print('done. (%.2f sec)' % (time.time() - tStart))
+
     # disp_list = []
     # velo_list = []
     # tStart = time.time()
-    # print 'Load ply files',
+    # print('Load ply files', end='')
     # for n in xrange(nFrames):
     #     if n % 10 == 0:
-    #         print '.',
+    #         print('.', end='')
     #     disp_list.append( PlyData.read( '0018/%06d_depth.ply' % n ) )
     #     velo_list.append( PlyData.read( '0018/%06d_velo.ply' % n ) )
-    # print 'done. (%.2f sec)' % (time.time() - tStart)
+    # print('done. (%.2f sec)' % (time.time() - tStart))
 
     app = QtGui.QApplication(sys.argv)
 
     tStart = time.time()
-    print 'Load points on GPU memory...',
-    mainWindow = SeqGLWidget(disp_list, velo_list)    
-    print 'done. (%.2f sec)' % (time.time() - tStart)
+    print('Load points on GPU memory...', end='')
+    mainWindow = SeqGLWidget(disp_list, velo_list)
+    print('done. (%.2f sec)' % (time.time() - tStart))
 
-    
+
     mainWindow.resize(1280, 960)
 
 
     tStart = time.time()
-    print 'Launch window...',
+    print('Launch window...', end='')
     mainWindow.show()
-    print 'done. (%.2f sec)' % (time.time() - tStart)
+    print('done. (%.2f sec)' % (time.time() - tStart))
 
     mainWindow.setDefaultModelViewMatrix()
 
